@@ -1,5 +1,5 @@
 # Mastermind
 Solve efficiently the Mastermind game.
 
-## What is the mastermind
- 
+## What is mastermind?
+
