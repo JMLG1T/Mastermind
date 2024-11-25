@@ -1,6 +1,6 @@
 # Mastermind Algorithm Comparison
 
-![Mastermind Board Game](https://raw.githubusercontent.com/username/mastermind/main/assets/mastermind-banner.png)
+![Mastermind Board Game](https://www.hasbro.com/common/productimages/en_IN/A3D0F2E3A4954E178138F27E2921F2DF/FE21BEFDC8F54E9498A6477D07D1E547.png)
 
 An experimental project comparing different algorithms and strategies for solving the classic code-breaking game Mastermind.
 
