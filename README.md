@@ -1,6 +1,5 @@
 # Mastermind Algorithm Comparison
 
-![Mastermind Board Game](https://www.hasbro.com/common/productimages/en_IN/A3D0F2E3A4954E178138F27E2921F2DF/FE21BEFDC8F54E9498A6477D07D1E547.png)
 
 An experimental project comparing different algorithms and strategies for solving the classic code-breaking game Mastermind.
 
@@ -13,6 +12,8 @@ Mastermind is a classic code-breaking game where one player (the codemaker) crea
 For example, if the secret code is `[Red, Blue, Green, Yellow]` and the guess is `[Red, Yellow, Blue, Purple]`:
 - Red is in correct position (1 black peg 🔴)
 - Yellow and Blue are correct colors but wrong positions (2 white pegs ⚪⚪)
+
+![Mastermind Board Game](https://www.hasbro.com/common/productimages/en_IN/A3D0F2E3A4954E178138F27E2921F2DF/FE21BEFDC8F54E9498A6477D07D1E547.png)
 
 Traditional game settings:
 - 6 possible colors
