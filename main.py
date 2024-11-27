@@ -1,103 +1,181 @@
 import random
-from itertools import product
-
+import itertools
 
 class Board:
     """
-    Tracks all guesses and their associated scores (black and white pegs).
+    Class to track all guesses and their corresponding feedback.
     """
     def __init__(self):
-        self.history = []  # Stores tuples of (guess, (black_pegs, white_pegs))
+        # Initialize an empty list to store tuples of (guess, feedback)
+        self.history = []
 
-    def add_guess(self, guess, score):
-        """
-        Adds a guess and its score to the history.
-        :param guess: List[str] - The guessed code (colors).
-        :param score: Tuple[int, int] - The number of black and white pegs.
-        """
-        self.history.append((guess, score))
+    def add(self, guess, feedback):
+        # Add the guess and feedback to the history
+        self.history.append((guess, feedback))
 
+    def display(self):
+        # Display the history of guesses and feedback
+        print("Guess history:")
+        for idx, (guess, feedback) in enumerate(self.history):
+            guess_str = ', '.join(guess)
+            print(f"Turn {idx+1}: Guess: [{guess_str}], Feedback (Black pegs, White pegs): {feedback}")
 
 class Verifier:
     """
-    Compares a guess with the secret code to calculate black and white pegs.
+    Class to compare a guess with the secret code and provide feedback.
     """
-    @staticmethod
-    def verify(guess, secret):
-        """
-        Compares guess with secret and returns black and white pegs.
-        :param guess: List[str] - The guessed code.
-        :param secret: List[str] - The secret code.
-        :return: Tuple[int, int] - (black_pegs, white_pegs)
-        """
-        black_pegs = sum(g == s for g, s in zip(guess, secret))  # Exact matches
-        whites = sum(min(guess.count(c), secret.count(c)) for c in set(guess))  # Matches ignoring position
-        white_pegs = whites - black_pegs  # White pegs exclude exact matches
-        return black_pegs, white_pegs
+    def __init__(self, secret_code):
+        # Store the secret code
+        self.secret_code = secret_code
 
+    def get_feedback(self, guess):
+        """
+        Compares the guess with the secret code and returns the number of black pegs and white pegs.
+        """
+        # Calculate black pegs (correct color and position)
+        black_pegs = sum(a == b for a, b in zip(guess, self.secret_code))
+
+        # Calculate white pegs (correct color, wrong position)
+        # Create copies of secret_code and guess to manipulate
+        secret_code_copy = list(self.secret_code)
+        guess_copy = list(guess)
+
+        # Remove black pegs from consideration
+        for i in range(len(guess_copy)-1, -1, -1):
+            if guess_copy[i] == secret_code_copy[i]:
+                del guess_copy[i]
+                del secret_code_copy[i]
+
+        # Count white pegs
+        white_pegs = 0
+        for color in guess_copy:
+            if color in secret_code_copy:
+                white_pegs += 1
+                secret_code_copy.remove(color)
+
+        return black_pegs, white_pegs
 
 class Player:
     """
-    Suggests new guesses based on game history and hypothesis list.
+    Class to suggest the next guess based on the history and hypothesis list.
     """
-    def __init__(self, colors, code_length):
-        """
-        Initializes the player with all possible guesses.
-        :param colors: List[str] - The available colors.
-        :param code_length: int - Length of the code.
-        """
-        self.hypothesis_list = list(product(colors, repeat=code_length))
+    def __init__(self, hypothesis_list):
+        # Initialize the hypothesis list with all possible codes
+        self.hypothesis_list = hypothesis_list
 
-    def suggest_code(self):
+    def update_hypothesis(self, last_guess, feedback):
         """
-        Suggests a random code from the hypothesis list.
-        :return: List[str] - A suggested code.
+        Update the hypothesis list by removing codes that are inconsistent with the feedback.
         """
-        return random.choice(self.hypothesis_list)
+        new_hypothesis = []
 
-    def update_hypothesis(self, guess, score):
-        """
-        Updates the hypothesis list by keeping only valid codes.
-        :param guess: List[str] - The guessed code.
-        :param score: Tuple[int, int] - The score (black_pegs, white_pegs) for the guess.
-        """
-        verifier = Verifier()
-        self.hypothesis_list = [
-            code for code in self.hypothesis_list
-            if verifier.verify(code, guess) == score
-        ]
+        for code in self.hypothesis_list:
+            # Simulate the feedback if 'code' was the secret code
+            simulated_verifier = Verifier(code)
+            simulated_feedback = simulated_verifier.get_feedback(last_guess)
 
+            # If the simulated feedback matches the actual feedback, keep the code
+            if simulated_feedback == feedback:
+                new_hypothesis.append(code)
+
+        # Update the hypothesis list
+        self.hypothesis_list = new_hypothesis
+
+    def suggest_next_guess(self):
+        """
+        Suggest the next guess from the hypothesis list.
+        For simplicity, pick the first code in the list.
+        """
+        if self.hypothesis_list:
+            return self.hypothesis_list[0]
+        else:
+            return None  # No possible guesses left
 
 def main():
-    # Game parameters
-    colors = ["blue", "green", "red", "white", "black", "pink", "orange", "yellow"]  # Available colors
-    code_length = 5  # Length of the code
+    # Input parameters
+    print("Welcome to Mastermind Solver!")
+    try:
+        num_colors = int(input("Enter the number of possible colors (e.g., 8): "))
+        code_length = int(input("Enter the length of the secret code (e.g., 5): "))
+    except ValueError:
+        print("Invalid input. Using default values: 8 colors, code length 5.")
+        num_colors = 8
+        code_length = 5
 
-    # Initialize the game objects
-    secret_code = [random.choice(colors) for _ in range(code_length)]
+    # Define the list of colors
+    base_colors = ['green', 'red', 'pink', 'orange', 'white', 'black', 'yellow', 'blue']
+    colors = base_colors[:num_colors]
+
+    # If num_colors exceeds the predefined colors, add numbered colors
+    if num_colors > len(base_colors):
+        additional_colors = [str(i) for i in range(9, num_colors+1)]
+        colors.extend(additional_colors)
+
+    # Generate all possible codes
+    # Use itertools.product to generate all combinations with repetition
+    all_possible_codes = list(itertools.product(colors, repeat=code_length))
+
+    # Randomly generate the secret code
+    secret_code = random.choice(all_possible_codes)
+    # For debugging purposes, you can print the secret code
+    # print(f"Secret code: {secret_code}")
+
+    # Initialize the Board
     board = Board()
-    player = Player(colors, code_length)
-    verifier = Verifier()
 
-    print("Secret code has been generated. Try to guess it!")
+    # Initialize the Player with all possible codes as the hypothesis list
+    player = Player(all_possible_codes.copy())
+
+    # Randomly generate the first guess
+    guess = random.choice(all_possible_codes)
+    # Remove the guess from the hypothesis list
+    player.hypothesis_list.remove(guess)
+
+    # Initialize the Verifier with the secret code
+    verifier = Verifier(secret_code)
 
     # Game loop
-    attempts = 0
-    while True:
-        attempts += 1
-        guess = player.suggest_code()
-        score = verifier.verify(guess, secret_code)
-        board.add_guess(guess, score)
+    max_turns = 12  # Maximum number of turns allowed
+    turn = 1
+    while turn <= max_turns:
+        print(f"\nTurn {turn}:")
+        guess_str = ', '.join(guess)
+        print(f"Player's guess: [{guess_str}]")
 
-        print(f"Attempt {attempts}: Guess = {guess}, Score = {score}")
+        # Get feedback for the guess
+        feedback = verifier.get_feedback(guess)
+        print(f"Feedback (Black pegs, White pegs): {feedback}")
 
-        if score[0] == code_length:
-            print(f"Congratulations! The secret code {secret_code} was cracked in {attempts} attempts.")
+        # Update the Board
+        board.add(guess, feedback)
+
+        # Check if the guess is correct
+        if feedback[0] == code_length:
+            print(f"\nCongratulations! The code was broken in {turn} turns!")
+            board.display()
             break
 
-        player.update_hypothesis(guess, score)
+        # Update the hypothesis list based on the feedback
+        player.update_hypothesis(guess, feedback)
+        print(f"Possible codes remaining: {len(player.hypothesis_list)}")
 
+        # Suggest the next guess
+        guess = player.suggest_next_guess()
 
-# Run the program
+        if guess is None:
+            print("No possible guesses left. The game cannot proceed.")
+            break
+
+        # Remove the guess from the hypothesis list
+        if guess in player.hypothesis_list:
+            player.hypothesis_list.remove(guess)
+
+        turn += 1
+
+    else:
+        print("\nSorry, the code was not broken within the maximum number of turns.")
+        print(f"The secret code was: {', '.join(secret_code)}")
+        board.display()
+
 if __name__ == "__main__":
     main()
