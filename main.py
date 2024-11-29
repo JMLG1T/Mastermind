@@ -1,5 +1,6 @@
 import random
 import itertools
+import math
 
 class Board:
     """
@@ -84,12 +85,60 @@ class Player:
     def suggest_next_guess(self):
         """
         Suggest the next guess from the hypothesis list.
-        For simplicity, pick the first code in the list.
+        For simplicity, pick a random code from the hypothesis list.
         """
         if self.hypothesis_list:
-            return self.hypothesis_list[0]
+            return random.choice(self.hypothesis_list)
         else:
             return None  # No possible guesses left
+
+class EntropyPlayer(Player):
+    """
+    Entropy-based player that selects the next guess by calculating the entropy
+    of all possible codes and choosing the one with the highest entropy.
+    """
+    def suggest_next_guess(self, all_possible_codes):
+        """
+        Suggest the next guess based on entropy calculations.
+
+        Args:
+            all_possible_codes (list): List of all possible codes (questions), including invalid ones.
+
+        Returns:
+            tuple: The code with the highest entropy.
+        """
+        max_entropy = -1
+        best_guess = None
+
+        if len(self.hypothesis_list)==1:
+            return self.hypothesis_list[0]
+        
+
+        for question in all_possible_codes:
+            # Dictionary to count the frequency of each feedback result
+            feedback_counts = {}
+
+            for possible_code in self.hypothesis_list:
+                # Simulate feedback if 'possible_code' was the secret code
+                simulated_verifier = Verifier(possible_code)
+                feedback = simulated_verifier.get_feedback(question)
+
+                # Use feedback as a key in the dictionary
+                feedback_counts[feedback] = feedback_counts.get(feedback, 0) + 1
+
+            # Calculate entropy for this question
+            total = sum(feedback_counts.values())
+            entropy = 0
+            for count in feedback_counts.values():
+                probability = count / total
+                entropy -= probability * math.log2(probability)
+
+            # Update the best guess if this entropy is higher
+            if entropy > max_entropy:
+                max_entropy = entropy
+                best_guess = question
+
+        return best_guess
 
 def main():
     # Input parameters
@@ -101,6 +150,12 @@ def main():
         print("Invalid input. Using default values: 8 colors, code length 5.")
         num_colors = 8
         code_length = 5
+
+    # Choose player strategy
+    strategy = input("Choose player strategy ('randomize' or 'entropy efficient'): ").strip().lower()
+    if strategy not in ['randomize', 'entropy efficient']:
+        print("Invalid strategy. Using default strategy 'randomize'.")
+        strategy = 'randomize'
 
     # Define the list of colors
     base_colors = ['green', 'red', 'pink', 'orange', 'white', 'black', 'yellow', 'blue']
@@ -124,12 +179,20 @@ def main():
     board = Board()
 
     # Initialize the Player with all possible codes as the hypothesis list
-    player = Player(all_possible_codes.copy())
+    if strategy == 'randomize':
+        player = Player(all_possible_codes.copy())
+    else:
+        player = EntropyPlayer(all_possible_codes.copy())
 
-    # Randomly generate the first guess
-    guess = random.choice(all_possible_codes)
-    # Remove the guess from the hypothesis list
-    player.hypothesis_list.remove(guess)
+    # Remove the initial guess from the hypothesis list if it's there
+    if strategy == 'randomize':
+        # Randomly generate the first guess
+        guess = random.choice(all_possible_codes)
+        if guess in player.hypothesis_list:
+            player.hypothesis_list.remove(guess)
+    else:
+        # For entropy player, we let the suggest_next_guess method handle the first guess
+        pass  # We'll call suggest_next_guess in the game loop
 
     # Initialize the Verifier with the secret code
     verifier = Verifier(secret_code)
@@ -139,6 +202,24 @@ def main():
     turn = 1
     while turn <= max_turns:
         print(f"\nTurn {turn}:")
+
+        if strategy == 'entropy efficient':
+            # Use entropy-based strategy to suggest next guess
+            guess = player.suggest_next_guess(all_possible_codes)
+            # Remove the guess from the hypothesis list if it's there
+            if guess in player.hypothesis_list:
+                player.hypothesis_list.remove(guess)
+        else:
+            # Use random strategy
+            guess = player.suggest_next_guess()
+            # Remove the guess from the hypothesis list if it's there
+            if guess in player.hypothesis_list:
+                player.hypothesis_list.remove(guess)
+
+        if guess is None:
+            print("No possible guesses left. The game cannot proceed.")
+            break
+
         guess_str = ', '.join(guess)
         print(f"Player's guess: [{guess_str}]")
 
@@ -158,17 +239,6 @@ def main():
         # Update the hypothesis list based on the feedback
         player.update_hypothesis(guess, feedback)
         print(f"Possible codes remaining: {len(player.hypothesis_list)}")
-
-        # Suggest the next guess
-        guess = player.suggest_next_guess()
-
-        if guess is None:
-            print("No possible guesses left. The game cannot proceed.")
-            break
-
-        # Remove the guess from the hypothesis list
-        if guess in player.hypothesis_list:
-            player.hypothesis_list.remove(guess)
 
         turn += 1
 
