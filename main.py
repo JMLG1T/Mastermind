@@ -152,8 +152,8 @@ def main():
         code_length = 5
 
     # Choose player strategy
-    strategy = input("Choose player strategy ('randomize' or 'entropy efficient'): ").strip().lower()
-    if strategy not in ['randomize', 'entropy efficient']:
+    strategy = input("Choose player strategy ('randomize' or 'en'): ").strip().lower()
+    if strategy not in ['randomize', 'en']:
         print("Invalid strategy. Using default strategy 'randomize'.")
         strategy = 'randomize'
 
